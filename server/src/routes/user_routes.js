@@ -14,6 +14,7 @@ router.get("/:userid", jwt, async function (req, res) {
         res.json({ success: false, error: "user-not-found" });
         return;
     }
+    foundUser.password = bcrypt.compare(password, foundUser.password);
 
     res.json({ success: true, data: foundUser });
 });
