@@ -14,8 +14,6 @@ router.get("/:userid", jwt, async function (req, res) {
         res.json({ success: false, error: "user-not-found" });
         return;
     }
-
-
     res.json({ success: true, data: foundUser });
 });
 
@@ -78,12 +76,28 @@ router.post("/login", async function (req, res) {
     res.json({ success: true, data: foundUser });
 });
 
-router.put("/:userid", async function (req, res) {
-    const userdata = req.body;
-    const userid = req.params.userid;
 
-    if (userdata.fullname == '' || userdata.phone == '' || userdata.email == '' || userdata.password == '') {
+router.put("/updatepassword/:userid", async function (req, res) {
+    const userdata = req.body;
+    const newpassword = userdata.password;
+    const userid = req.params.userid;
+    const oldpassword = req.headers["old-password"];
+    const confirmnewpassword = req.headers["confirm-new-password"];
+
+    if (userdata.password == '' || oldpassword == '' || confirmnewpassword == '') {
         res.json({ success: false, error: "fill-all-mandatory-fields" });
+        return;
+    }
+    if ([...newpassword].length < 6) {
+        res.json({ success: false, error: "New Password must be atleast 6 digits" });
+        return;
+    }
+    if ((newpassword === confirmnewpassword) == false) {
+        res.json({ success: false, error: "New Password & Confirm new Password don't match." });
+        return;
+    }
+    if (bcrypt.compare(newpassword, oldpassword) == false) {
+        res.json({ success: false, error: "Enter correct old password" });
         return;
     }
     if (userdata.password != null) {
@@ -94,6 +108,24 @@ router.put("/:userid", async function (req, res) {
         userdata.password = hashedPassword;
     }
 
+    const result = await UserModel.findOneAndUpdate({ userid: userid }, userdata);
+
+    if (!result) {
+        res.json({ success: false, error: "user-not-found" });
+        return;
+    }
+
+    res.json({ success: true, data: userdata });
+});
+
+router.put("/:userid", async function (req, res) {
+    const userdata = req.body;
+    const userid = req.params.userid;
+
+    if (userdata.fullname == '' || userdata.phone == '' || userdata.email == '') {
+        res.json({ success: false, error: "fill-all-mandatory-fields" });
+        return;
+    }
     const result = await UserModel.findOneAndUpdate({ userid: userid }, userdata);
 
     if (!result) {
